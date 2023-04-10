@@ -22,11 +22,13 @@ jobs:
             ./MAKEDEV ra1
             mkfs -s 10240 /dev/ra1a
 
+            rm -rf /usr
+
             cd /
             mount /dev/ra1a /mnt
             dump 0f /mnt/root.dump /
             sync
-            sleep 5
+            sleep 10
             umount /mnt
 
       - name: Extract root.dump
