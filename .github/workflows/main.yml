@@ -26,7 +26,7 @@ jobs:
 
             cd /
             mount /dev/ra1a /mnt
-            dump 0f /mnt/root.dump / ; [ \\\\$? -eq 1 ] && true
+            dump 0f /mnt/root.dump / || true
             sync
             sleep 10
             umount /mnt
