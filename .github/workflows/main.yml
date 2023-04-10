@@ -1,0 +1,38 @@
+on: [push]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    name: Create distribution
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: Create root.dump
+        uses: AaronJackson/2.11BSD-Action@main
+        with:
+          path: /dist
+          patch_level: 479
+          run: |
+            cd /usr/src/sys/GENERIC
+            make
+            make install
+
+            cd /dev
+            ./MAKEDEV ra1
+            mkfs -s 10240 /dev/ra1a
+
+            cd /
+            mount /dev/ra1a /mnt
+            dump 0f /mnt/root.dump /
+            sync
+            sleep 5
+            umount /mnt
+
+      - name: Extract root.dump
+        run: |
+          mkdir distribution scratch
+          bsd211fs ../scratch.dsk scratch
+          cp scrtch/root.dump distribution/root.dump
+          umount scratch
+          ls -lah distribution
