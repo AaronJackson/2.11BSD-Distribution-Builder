@@ -22,6 +22,7 @@ jobs:
             ./MAKEDEV ra1
             mkfs -s 10240 /dev/ra1a
 
+            cp /usr/bin/sleep /bin/sleep
             rm -rf /usr
 
             cd /
