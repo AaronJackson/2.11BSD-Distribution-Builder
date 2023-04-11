@@ -24,7 +24,8 @@ jobs:
             mkfs -s 10240 /dev/ra1a
 
             cp /usr/bin/sleep /bin/sleep
-            rm -rf /usr
+            rm -rf /usr /disklabel
+            rm /*.core || true
 
             cd /
             mount /dev/ra1a /mnt
