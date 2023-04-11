@@ -11,7 +11,6 @@ jobs:
         465, 466, 467, 468, 469, 470, 471,
         472, 473, 474, 475, 476, 477, 478, 479
         ]
-      max-parallel: 1
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -29,7 +28,7 @@ jobs:
           region = ${SCW_REGION}
           s3 =
             endpoint_url = https://s3.fr-par.scw.cloud
-            signature_version = s3v4
+            signature_version = s3v3
           s3api =
             endpoint_url = https://s3.fr-par.scw.cloud
           CONF
