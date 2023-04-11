@@ -4,15 +4,45 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     name: Create distribution
+    strategy:
+      matrix:
+        pl: [
+        458, 459, 460, 461, 462, 463, 464,
+        465, 466, 467, 468, 469, 470, 471,
+        472, 473, 474, 475, 476, 477, 478, 479
+        ]
     steps:
       - name: checkout
         uses: actions/checkout@v3
+
+      - name: configure aws cli for s3 uploads
+        run: |
+          pip install awscli-plugin-endpoint
+
+          mkdir ~/.aws
+          cat > ~/.aws/config <<CONF
+          [plugins]
+          endpoint = awscli_plugin_endpoint
+
+          [default]
+          region = ${SCW_REGION}
+          s3 =
+            endpoint_url = https://s3.fr-par.scw.cloud
+            signature_version = s3v4
+          s3api =
+            endpoint_url = https://s3.fr-par.scw.cloud
+          CONF
+          cat > ~/.aws/credentials <<CREDS
+          [default]
+          aws_access_key_id = ${{ secrets.SCW_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.SCW_SECRET_KEY }}
+          CREDS
 
       - name: Create root.dump
         uses: AaronJackson/2.11BSD-Action@main
         with:
           path: /dist
-          patch_level: 479
+          patch_level: ${{ matrix.pl }}
           run: |
             rm -rf /olddev /genunix /unixold /netnix
             cd /usr/src/sys/GENERIC
@@ -48,13 +78,14 @@ jobs:
           cp scratch/root.dump distribution/root.dump
           umount scratch
           ls -lah distribution
+          aws s3 cp distribution/root.dump s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/root.dump
           rm -f ../ci.dsk
 
       - name: Create file6.tar (/usr excluding /usr/src as a tar dump)
         uses: AaronJackson/2.11BSD-Action@main
         with:
           path: /dist
-          patch_level: 479
+          patch_level: ${{ matrix.pl }}
           run: |
             cd /dev
             ./MAKEDEV ra1
@@ -75,13 +106,14 @@ jobs:
           gzip distribution/file6.tar
           umount scratch
           ls -lah distribution
+          aws s3 cp distribution/file6.tar.gz s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file6.tar.gz
           rm -f ../ci.dsk
 
       - name: Create file7.tar (/usr/src/include and /usr/src/sys as a tar dump)
         uses: AaronJackson/2.11BSD-Action@main
         with:
           path: /dist
-          patch_level: 479
+          patch_level: ${{ matrix.pl }}
           run: |
             cd /dev
             ./MAKEDEV ra1
@@ -101,13 +133,14 @@ jobs:
           gzip distribution/file7.tar
           umount scratch
           ls -lah distribution
+          aws s3 cp distribution/file7.tar.gz s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file7.tar.gz
           rm -f ../ci.dsk
 
       - name: Create file8.tar (/usr/src excluding sys and include as a tar dump)
         uses: AaronJackson/2.11BSD-Action@main
         with:
           path: /dist
-          patch_level: 479
+          patch_level: ${{ matrix.pl }}
           run: |
             cd /dev
             ./MAKEDEV ra1
@@ -121,7 +154,6 @@ jobs:
 
       - name: Extract file8.tar
         run: |
-          pwd
           mkdir distribution scratch
           sudo chown $USER: -R scratch ../scratch.dsk
           bsd211fs ../scratch.dsk scratch
@@ -129,4 +161,5 @@ jobs:
           gzip distribution/file8.tar
           umount scratch
           ls -lah distribution
+          aws s3 cp distribution/file8.tar.gz s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file8.tar.gz
           rm -f ../ci.dsk
