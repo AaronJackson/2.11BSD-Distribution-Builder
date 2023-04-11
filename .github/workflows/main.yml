@@ -14,6 +14,7 @@ jobs:
           path: /dist
           patch_level: 479
           run: |
+            rm -rf /olddevr /genunix /unixold /netnix
             cd /usr/src/sys/GENERIC
             make
             make install
