@@ -60,8 +60,6 @@ jobs:
             rm /bin/*.old || true
             rm -rf /dist || true
 
-            strip /boot /toyset /bin/* /sbin/* || true
-
             cd /
             mount /dev/ra1a /mnt
             dump 0f /mnt/root.dump / || true
