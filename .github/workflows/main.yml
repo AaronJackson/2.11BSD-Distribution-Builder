@@ -58,7 +58,7 @@ jobs:
           run: |
             cd /dev
             ./MAKEDEV ra1
-            mkfs -s 10240 /dev/ra1a
+            mkfs -s 102400 /dev/ra1a
             cd /
             mount /dev/ra1a /mnt
             cd /usr
