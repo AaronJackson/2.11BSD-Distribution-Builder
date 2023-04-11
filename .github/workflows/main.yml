@@ -25,11 +25,9 @@ jobs:
           endpoint = awscli_plugin_endpoint
 
           [default]
-          region = ${SCW_REGION}
+          region = fr-par
           s3 =
             endpoint_url = https://s3.fr-par.scw.cloud
-            signature_version = s3v4
-            multipart_chunksize = 1MB
           s3api =
             endpoint_url = https://s3.fr-par.scw.cloud
           CONF
