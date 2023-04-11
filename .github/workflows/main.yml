@@ -76,7 +76,8 @@ jobs:
           cp scratch/root.dump distribution/root.dump
           umount scratch
           ls -lah distribution
-          aws s3 cp distribution/root.dump s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/root.dump
+          gzip distribution/root.dump
+          aws s3 cp distribution/root.dump.gz s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/root.dump.gz
           rm -f ../ci.dsk
 
       - name: Create file6.tar (/usr excluding /usr/src as a tar dump)
