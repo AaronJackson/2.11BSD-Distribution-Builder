@@ -28,6 +28,7 @@ jobs:
             cd /
             mount /dev/ra1a /mnt
             dump 0f /mnt/root.dump / || true
+            chmod 644 /mnt/root.dump
             sync
             sleep 10
             umount /mnt
