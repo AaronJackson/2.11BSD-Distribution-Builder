@@ -27,6 +27,8 @@ jobs:
             rm -rf /usr /disklabel
             rm /*.core || true
 
+            strip /boot /unix /bin/* /sbin/* || true
+
             cd /
             mount /dev/ra1a /mnt
             dump 0f /mnt/root.dump / || true
