@@ -121,6 +121,7 @@ jobs:
 
       - name: Extract file8.tar
         run: |
+          pwd
           mkdir distribution scratch
           sudo chown $USER: -R scratch ../scratch.dsk
           bsd211fs ../scratch.dsk scratch
