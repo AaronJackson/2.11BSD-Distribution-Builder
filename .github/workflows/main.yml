@@ -28,6 +28,7 @@ jobs:
             rm /*.core || true
             rm -rf /tmp/* || true
             rm /bin/*.old || true
+            rm -rf /dist || true
 
             strip /boot /toyset /bin/* /sbin/* || true
 
@@ -45,5 +46,31 @@ jobs:
           sudo chown $USER: -R scratch ../scratch.dsk
           bsd211fs ../scratch.dsk scratch
           cp scratch/root.dump distribution/root.dump
+          umount scratch
+          ls -lah distribution
+
+      - name: Create file6.tar (/usr excluding /usr/src as a tar dump)
+        uses: AaronJackson/2.11BSD-Action@main
+        with:
+          path: /dist
+          patch_level: 479
+          run: |
+            cd /dev
+            ./MAKEDEV ra1
+            mkfs -s 10240 /dev/ra1a
+            cd /
+            mount /dev/ra1a /mnt
+            cd /usr
+            rm -rf src
+            tar cf - . > /mnt/file6.tar
+
+
+      - name: Extract file6.tar
+        run: |
+          mkdir distribution scratch
+          sudo chown $USER: -R scratch ../scratch.dsk
+          bsd211fs ../scratch.dsk scratch
+          cp scratch/file6.tar distribution/file6.tar
+          gzip distribution/file6.tar
           umount scratch
           ls -lah distribution
