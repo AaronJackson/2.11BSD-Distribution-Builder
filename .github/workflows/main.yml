@@ -28,7 +28,8 @@ jobs:
           region = ${SCW_REGION}
           s3 =
             endpoint_url = https://s3.fr-par.scw.cloud
-            signature_version = s3v3
+            signature_version = s3v4
+            multipart_chunksize = 1M
           s3api =
             endpoint_url = https://s3.fr-par.scw.cloud
           CONF
