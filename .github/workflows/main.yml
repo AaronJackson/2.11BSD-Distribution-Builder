@@ -35,6 +35,7 @@ jobs:
       - name: Extract root.dump
         run: |
           mkdir distribution scratch
+          sudo chown $USER: -R scratch ../scratch.dsk
           bsd211fs ../scratch.dsk scratch
           cp scrtch/root.dump distribution/root.dump
           umount scratch
