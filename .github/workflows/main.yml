@@ -48,6 +48,7 @@ jobs:
           cp scratch/root.dump distribution/root.dump
           umount scratch
           ls -lah distribution
+          rm -f ../ci.dsk
 
       - name: Create file6.tar (/usr excluding /usr/src as a tar dump)
         uses: AaronJackson/2.11BSD-Action@main
@@ -74,3 +75,4 @@ jobs:
           gzip distribution/file6.tar
           umount scratch
           ls -lah distribution
+          rm -f ../ci.dsk
