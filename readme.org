@@ -1,0 +1,150 @@
+* 2.11BSD Distribution Generator
+
+/Note: Any instructional information provided here is just re-worded
+from the original distribution's ~setup.ps~ file./
+
+The purpose of this repo is two-fold. First, it should handle the
+creation of distribution tapes for all patch levels, while performing
+a few tests to ensure that they work. Second, it should roughly
+describe how to utilise these distributions to perform the
+installation of 2.11BSD on a real PDP-11, from a tape drive.
+
+** Expectations
+
+Since I have a limited set of equipment available to me, I can only
+test a limit number of configurations. I will be preparing the tapes
+from a Linux machine with a PCI SCSI card installed. The SCSI card
+is used to attach a Compaq DLT4000 tape drive, which will be used for
+writing the DLT4 tapes.
+
+For testing these distributions, I use the following PDP-11 system:
+
+- PDP-11/73 with 1.1MB of RAM (two 512K cards, plus a MXV11
+  multi-function card).
+- An Emulex UC07 configured for MSCP attached to a SCSI disk or
+  SCSI2SD disk emulator.
+- A second Emulex UC07 configured for TMSCP attached to a DLT4000 tape
+  drive. Yes! A DLT4000 will work with a TMSCP tape controller. :-)
+
+I would assume other SCSI MSCP and TMSCP controllers would work fine,
+but I don't have any to test with.
+
+** Description of Tapes
+
+Performing a fresh installation of 2.11BSD is done from two tapes. The
+first tape contains everything you need to get a system installed, and
+the second includes the rest of ~/usr/src~. This is described in the
+tables below.
+
+*Tape 1*
+
+| Tape File | Record Size | Records | Contents                                              |
+|-----------+-------------+---------+-------------------------------------------------------|
+|         0 |         512 |       1 | Primary tape boot block                               |
+|           |         512 |       1 | A second copy of the boot block                       |
+|           |         512 |      69 | ~boot~ program                                        |
+|         1 |        1024 |      37 | ~disklabel~ program                                   |
+|         2 |        1024 |      33 | ~mkfs~ program                                        |
+|         3 |        1024 |      35 | ~restor~ program                                      |
+|         4 |        1024 |      32 | ~icheck~ program                                      |
+|         5 |       10240 |     285 | root file system ~dump~                               |
+|         6 |       10240 |    3368 | ~/usr~ excluding ~/usr/src~ as a ~tar~ dump           |
+|         7 |       10240 |     519 | ~/usr/src/include~ and ~/usr/src/sys~ as a ~tar~ dump |
+
+The boot block is repeated twice as some tape controllers use the
+second block instead of the firs. The five programs after this are
+loaded by the boot block, and run without an operating system. They
+guide you through the process of installing 2.11BSD on your disk.
+
+*Tape 2*
+
+| Tape File | Record Size | Recods | Contents                                                  |
+|-----------+-------------+--------+-----------------------------------------------------------|
+|         0 |       10240 |   4092 | ~/usr/src~, excluding ~include~ and ~sys~ as a ~tar~ dump |
+
+I've only tested installation of these tapes from a TMSCP tape
+controller, namely using an Emulex UC07 configured for tape use. Also
+note that if you are using a tape which can accommodate all files, you
+don't need to split this across two tapes.
+
+** Writing Tapes
+
+Typically the writing of 2.11BSD tapes would be done from a 2.11BSD
+system running on an actual PDP-11. Since we only have one PDP-11, the
+writing of tapes will be performed from a Linux system as described in
+"Expectations" section earlier.
+
+*Writing Tape 1* The first tape must be written using the ~maketape~
+program. This can be compiled on a modern Linux system using ~gcc~,
+despite being in K&R C.
+
+#+BEGIN_SRC shell
+    $ gcc maketape.c -o maketape
+#+END_SRC
+
+The ~maketape~ program takes two arguments as input. The first is the
+path to your tape drive. This needs to be your non-rewinding tape
+device node, usually available at ~/dev/nst0~. The second is a text
+file describing the tape files to be written. This can be pulled out
+from a 2.11BSD image, but here's what it should look like:
+
+#+BEGIN_SRC text
+    mtboot 1
+    mtboot 1
+    boot 1
+    * 1
+    disklabel 2
+    * 1
+    mkfs 2
+    * 1
+    restor 2
+    * 1
+    icheck 2
+#+END_SRC
+
+As you can probably tell, each line shows the file to be written,
+along with the number of 512 byte blocks. A line containing an '*'
+results in an ~ioctl~ call to write the end of file marker.
+
+** Performing an Installation
+
+For the purposes of testing the provided distributions, ~mkdisttap.pl~
+is used to join the files together with the appropriate markers for
+SIMH. This allows the GitHub workflow to perform a test of the
+prepared distribution media too. The installation is handled by an
+~expect~ script which responds appropriately to configure the system
+and perform the installation.
+
+If you are installing this on a real PDP-11, you can use this as a
+guide, or just follow the ~setup.ps~ file included with the original
+distribution.
+
+** List of media
+
+The tar files have been compressed and need to be extracted before
+they can be written to tape.
+
+| Patch Level | SIMH ~.tap~ | ~root.dump~ | ~file6.tar~  | ~file7.tar~  | ~file8.tar~  |
+|-------------+-------------+-------------+--------------+--------------+--------------|
+|         458 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/458/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/458/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/458/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/458/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/458/file8.tar.gz][file8.tar.gz]] |
+|         459 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/459/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/459/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/459/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/459/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/459/file8.tar.gz][file8.tar.gz]] |
+|         460 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/460/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/460/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/460/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/460/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/460/file8.tar.gz][file8.tar.gz]] |
+|         461 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/461/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/461/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/461/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/461/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/461/file8.tar.gz][file8.tar.gz]] |
+|         462 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/462/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/462/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/462/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/462/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/462/file8.tar.gz][file8.tar.gz]] |
+|         463 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/463/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/463/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/463/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/463/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/463/file8.tar.gz][file8.tar.gz]] |
+|         464 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/464/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/464/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/464/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/464/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/464/file8.tar.gz][file8.tar.gz]] |
+|         465 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/465/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/465/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/465/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/465/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/465/file8.tar.gz][file8.tar.gz]] |
+|         466 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/466/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/466/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/466/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/466/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/466/file8.tar.gz][file8.tar.gz]] |
+|         467 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/467/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/467/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/467/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/467/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/467/file8.tar.gz][file8.tar.gz]] |
+|         468 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/468/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/468/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/468/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/468/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/468/file8.tar.gz][file8.tar.gz]] |
+|         469 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/469/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/469/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/469/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/469/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/469/file8.tar.gz][file8.tar.gz]] |
+|         470 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/470/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/470/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/470/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/470/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/470/file8.tar.gz][file8.tar.gz]] |
+|         471 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/471/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/471/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/471/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/471/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/471/file8.tar.gz][file8.tar.gz]] |
+|         472 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/472/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/472/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/472/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/472/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/472/file8.tar.gz][file8.tar.gz]] |
+|         473 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/473/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/473/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/473/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/473/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/473/file8.tar.gz][file8.tar.gz]] |
+|         474 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/474/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/474/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/474/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/474/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/474/file8.tar.gz][file8.tar.gz]] |
+|         475 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/475/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/475/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/475/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/475/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/475/file8.tar.gz][file8.tar.gz]] |
+|         476 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/476/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/476/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/476/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/476/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/476/file8.tar.gz][file8.tar.gz]] |
+|         477 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/477/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/477/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/477/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/477/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/477/file8.tar.gz][file8.tar.gz]] |
+|         478 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/478/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/478/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/478/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/478/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/478/file8.tar.gz][file8.tar.gz]] |
+|         479 | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/479/211bsd.tap][211bsd.tap]]  | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/479/root.dump][root.dump]]   | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/479/file6.tar.gz][file6.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/479/file7.tar.gz][file7.tar.gz]] | [[https://asjackson-211bsd-ci.s3.fr-par.scw.cloud/dist/479/file8.tar.gz][file8.tar.gz]] |
