@@ -163,3 +163,19 @@ jobs:
           ls -lah distribution
           aws s3 cp distribution/file8.tar.gz s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file8.tar.gz
           rm -f ../ci.dsk
+
+      - name: Create SIMH compatible 2.11BSD distribution tape and test that it works
+        run: |
+          aws s3 cp "s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/root.dump" - > "root.dump"
+          aws s3 cp "s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file6.tar.gz" - | gzip -d > "file6.tar"
+          aws s3 cp "s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file7.tar.gz" - | gzip -d > "file7.tar"
+          aws s3 cp "s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/file8.tar.gz" - | gzip -d > "file8.tar"
+
+          ./mkdisttap.pl > 211bsd.tap
+          ./install.expect
+
+          [ $? -eq 0 ] && echo "🎉 The system works!"
+
+          gzip 211bsd.tap
+          aws s3 cp 211bsd.tap.gz s3://asjackson-211bsd-ci/dist/${{ matrix.pl }}/211bsd.tap
+
