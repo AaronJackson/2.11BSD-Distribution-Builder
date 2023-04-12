@@ -96,6 +96,9 @@ expect -ex {erase, kill ^U, intr ^C}
 expect "# " {send "cd /dev\n"}
 expect "# " {send "./MAKEDEV tu0\n"}
 expect "# " {send "mkdir /usr\n"}
+expect "# " {send "cd /\n"}
+expect "# " {send "rm -rf /usr\n"}
+expect "# " {send "mkdir /usr\n"}
 expect "# " {send "cd /usr\n"}
 expect "# " {send "mt rew\n"}
 expect "# " {send "mt fsf 6\n"}
@@ -119,7 +122,7 @@ expect "# " {send "cd /usr/src\n"}
 expect "# " {send "tar xpbf 20 /dev/rmt12\n"}
 
 # Perform some tests
-set timeout 500
+set timeout 180
 
 expect "# " {send "cd /usr/src/sys/GENERIC\n"}
 expect "# " {send "make clean\n"}
